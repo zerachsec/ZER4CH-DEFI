@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 
 import {Zer4chStableCoin} from "./Zer4chStableCoin.sol";
 import {ReentrancyGuard} from "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Z4CEngine
@@ -29,13 +30,14 @@ contract Z4CEngine is ReentrancyGuard {
     error Zer4chStableCoin__TokenAddressesAndPriceFeedAddressesMustBeSameLength();
     error Zer4chStableCoin__NotZeroAddress();
     error Zer4chStableCoin__NotAllowedToken();
+    error Zer4chStablecoin_TransferFailed();
 
     mapping(address token => address priceFeed) private s_priceFeeds; // token address -> price feed address
     mapping(address user => mapping(address token => uint256 amount)) private s_collateralDeposited; // user address -> (token address -> amount deposited)
 
     Zer4chStableCoin private immutable i_z4c;
 
-    event collateralDeposited(address indexed user, address indexed token, uint256 amount);
+    event collateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
 
     modifier moreThanZero(uint256 _amount) {
         if (_amount <= 0) {
@@ -67,6 +69,7 @@ contract Z4CEngine is ReentrancyGuard {
     function depositCollateralAndMintZ4C() external {}
 
     /**
+     * @notice following CEI pattern
      * @notice Users can deposit collateral (ETH or WBTC) and mint Z4C in one transaction
      * @param _tokenCollateral The address of the collateral token to deposit
      */
@@ -78,6 +81,10 @@ contract Z4CEngine is ReentrancyGuard {
     {
         s_collateralDeposited[msg.sender][_tokenCollateraladdress] += _amountCollateraladdress;
         emit collateralDeposited(msg.sender, _tokenCollateraladdress, _amountCollateraladdress);
+        bool success = IERC20(_tokenCollateraladdress).transferFrom(msg.sender, address(this), _amountCollateraladdress);
+        if (!success) {
+            revert Zer4chStablecoin_TransferFailed();
+        }
     }
 
     function redeemCollateralforZ4C() external {}
