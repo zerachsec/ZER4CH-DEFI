@@ -16,18 +16,18 @@ import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
  * This is the contract meant to be owned by DSCEngine. It is a ERC20 token that can be minted and burned by theDSCEngine smart contract.
  */
 contract Zer4chStableCoin is ERC20Burnable, Ownable {
-    error Zer4chStableCoin__mustbemorethanzero();
+    error Zer4chStableCoin__mustBeMoreThanZero();
     error Zer4chStableCoin__burnAmountExceedsBalance();
     error Zer4chStableCoin__NotZeroAddress();
 
-    constructor() ERC20("Zer4chStableCoin", "Z4C") {}
+    constructor() ERC20("Zer4chStableCoin", "Z4C") Ownable(msg.sender) {}
 
     function burn(uint256 _amount) public override onlyOwner {
         uint256 balance = balanceOf(msg.sender);
         if (_amount <= 0) {
-            revert Zer4chStableCoin_mustbemorethanzero();
+            revert Zer4chStableCoin__mustBeMoreThanZero();
         }
-        if (_amount > balance) {
+        if (balance < _amount) {
             revert Zer4chStableCoin__burnAmountExceedsBalance();
         }
         super.burn(_amount);
@@ -38,7 +38,7 @@ contract Zer4chStableCoin is ERC20Burnable, Ownable {
             revert Zer4chStableCoin__NotZeroAddress();
         }
         if (_amount <= 0) {
-            revert Zer4chStableCoin__mustbemorethanzero();
+            revert Zer4chStableCoin__mustBeMoreThanZero();
         }
         _mint(_to, _amount);
         return true;
